@@ -1,0 +1,7 @@
+alias r="rails"
+alias rc="rails c"
+alias rs="rails s"
+alias b="bundle"
+alias be="bundle exec"
+alias bi="bundle install"
+alias remigrate="bundle exec rake db:drop db:create db:migrate db:schema:load"

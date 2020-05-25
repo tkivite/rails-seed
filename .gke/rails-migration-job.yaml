@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rails-migration
+  namespace: rails
+spec:
+  activeDeadlineSeconds: 60
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: rails-migration
+          image: registry.gitlab.com/your-repo:v0.0.1
+          # imagePullPolicy: Always # Not needed. Stick to CI_VERSION release
+          env:
+            - name: RAILS_ENV
+              value: production
+            - name: RAILS_LOG_TO_STDOUT
+              value: enabled
+            - name: WRITER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: writer.instirs-postgres-cluster.credentials
+                  key: password
+            - name: READER_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reader.instirs-postgres-cluster.credentials
+                  key: password
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rails-secrets
+                  key: master.key
+          command:
+            - bundle
+            - exec
+            - rails
+            - db:migrate
+      imagePullSecrets:
+        - name: regcred

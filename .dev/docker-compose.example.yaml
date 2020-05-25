@@ -1,0 +1,146 @@
+# https://evilmartians.com/chronicles/ruby-on-whales-docker-for-ruby-rails-development
+version: '3.7'
+
+x-app: &app
+  build:
+    context: ../
+    dockerfile: ./.dev/dev.Dockerfile
+  environment: &env
+    NODE_ENV: development
+    RAILS_ENV: ${RAILS_ENV:-development}
+  image: ror-dev:0.0.1
+  tmpfs:
+    - /tmp
+
+x-backend: &backend
+  <<: *app
+  stdin_open: true
+  tty: true
+  volumes:
+    - ../:/home/deploy/home/deploy/app:cached
+    - bundle:/usr/local/bundle
+    - rails_cache:/home/deploy/app/tmp/cache # If using asset pipeline
+    - node_modules:/home/deploy/app/node_modules # If using asset pipeline
+    - packs:/home/deploy/app/public/packs # If using asset pipeline
+    - ./.psqlrc:/home/deploy/.psqlrc:ro
+    - ./.bash_aliases:/home/deploy/.bash_aliases:ro
+  environment:
+    <<: *env
+    REDIS_URL: redis://redis:6379/
+    DATABASE_URL: postgres://postgres:postgres@postgres:5432
+    BOOTSNAP_CACHE_DIR: /usr/local/bundle/_bootsnap
+    WEBPACKER_DEV_SERVER_HOST: webpacker # If using asset pipeline
+    WEB_CONCURRENCY: 1
+    HISTFILE: /home/deploy/app/log/.bash_history
+    PSQL_HISTFILE: /home/deploy/app/log/.psql_history
+    EDITOR: vi
+  depends_on:
+    - postgres
+    - redis
+    - mongodb
+  restart: always #on-failure
+
+services:
+  runner:
+    <<: *backend
+    command: /bin/bash
+    ports:
+      - '3000:3000'
+      - '3002:3002'
+
+  test:
+    <<: *backend
+    command: bundle exec guard
+
+  rails:
+    <<: *backend
+    command: bundle exec rails server -b 0.0.0.0 # tail -f /dev/null
+    ports:
+      - '3000:3000'
+
+  sidekiq:
+    <<: *backend
+    command: bundle exec sidekiq -C config/sidekiq.yml
+
+  postgres:
+    image: postgres:12.1
+    volumes:
+      - ./.psqlrc:/root/.psqlrc:ro
+      - postgres:/var/lib/postgresql/data
+      - ./volumes/pg_log:/root/log:cached
+    environment:
+      PSQL_HISTFILE: /root/log/.psql_history
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432
+    healthcheck:
+      test: pg_isready -U postgres -h 127.0.0.1
+      interval: 5s
+
+  redis:
+    image: redis:5.0.7-alpine
+    volumes:
+      - redis:/data
+    ports:
+      - 6379
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  mongodb:
+    image: mongo:4.2.0-bionic
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    command:
+      - mongod
+      - --bind_ip_all
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb:/data/db
+    networks:
+      - rails_docker
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+    networks:
+      - rails_docker
+    depends_on:
+      - mongodb
+
+  webpacker:
+    <<: *app
+    command: ./bin/webpack-dev-server
+    ports:
+      - '3035:3035'
+    volumes:
+      - ./rails:/home/deploy/app:cached
+      - bundle:/usr/local/bundle
+      - node_modules:/home/deploy/app/node_modules
+      - packs:/home/deploy/app/public/packs
+    environment:
+      <<: *env
+      WEBPACKER_DEV_SERVER_HOST: 0.0.0.0
+
+  mailcatcher:
+    image: tophfr/mailcatcher
+    ports:
+      - "25:25"
+      - "1080:80"
+
+volumes:
+  postgres:
+  redis:
+  bundle:
+  node_modules:
+  rails_cache:
+  packs:
+  mongodb:

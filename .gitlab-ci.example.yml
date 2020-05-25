@@ -1,0 +1,109 @@
+---
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    # VERSION: Do not use. Will cause a db migration
+    CI_VERSION: v0.0.1
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  stages:
+    - build
+    - test
+    - deploy
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - public/
+      - vendor/
+
+  build:
+    stage: build
+    only:
+      - master
+      - release
+    script:
+      - docker pull $CI_REGISTRY_IMAGE:latest || true
+      - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_VERSION --tag $CI_REGISTRY_IMAGE:latest .
+      - docker push $CI_REGISTRY_IMAGE:$CI_VERSION
+      - docker push $CI_REGISTRY_IMAGE:latest
+      # - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+  minitest:
+    before_script:
+      - echo "running test" # override parent before_script
+    stage: test
+    only:
+      - merge_requests
+      - master
+      - release
+    image: $CI_REGISTRY_IMAGE:latest
+    services:
+      - postgres:12.1
+    variables:
+      DATABASE_URL: postgres://postgres:mysecretpassword@postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      RAILS_ENV: test
+    script:
+      - bundle install
+      - bundle exec rails db:create
+      - bundle exec rails db:migrate
+      - bundle exec rails test
+
+  rubocop:
+    stage: test
+    extends: minitest
+    only:
+      - merge_requests
+      - master
+      - release
+    script:
+      - bundle exec rubocop
+    allow_failure: false
+
+  bundle-audit:
+    stage: test
+    extends: minitest
+    only:
+      - master
+      - release
+    script:
+      - bundle exec bundle audit check --update
+    allow_failure: false
+
+  deploy:
+    before_script:
+      - echo "running deployment" # override parent before_script
+    image:
+      name: registry.gitlab.com/dockerizers/gcloud-dev:latest
+      entrypoint: [""]
+    stage: deploy
+    variables:
+      ZONE: "europe-west6-a"
+      CLOUDSDK_CORE_PROJECT: "instirs-playground"
+      CLUSTER_NAME: "quikk-sandbox-1"
+    only:
+      - release
+    script:
+      - gcloud auth activate-service-account --key-file=$GITLAB_SERVICE_ACCOUNT
+      - gcloud config set compute/zone $ZONE
+      - gcloud container clusters get-credentials $CLUSTER_NAME
+      - kubectl set image deployment/rails-api rails-api=$CI_REGISTRY_IMAGE:$CI_VERSION --record -n rails
+      - sed -i "s@\(image:\).*@\1 $CI_REGISTRY_IMAGE:$CI_VERSION@" .gke/rails-migration-job.yaml
+      - kubectl apply -f .gke/rails-migration-job.yaml
+      - |
+        while ! [[ "$status" == "Complete" || "$status" == "Failed" ]]; do
+          sleep 0.5
+          echo "Getting status"
+          status=$(kubectl get jobs rails-migration -n rails -o jsonpath='{.status.conditions[*].type}')
+        done
+        if [ "$status" == "Complete" ];
+        then
+          echo "Job Completed"
+          kubectl delete job rails-migration -n rails
+          exit 0
+        else
+          exit 1
+        fi
+

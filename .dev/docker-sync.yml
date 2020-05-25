@@ -1,0 +1,14 @@
+# https://docker-sync.readthedocs.io/en/latest/getting-started/configuration.html#references
+# https://dev.to/kovah/cut-your-docker-for-mac-response-times-in-half-with-docker-sync-1e8j
+version: "2"
+options:
+  compose-file-path: 'docker-compose.yaml'
+  compose-dev-file-path: 'docker-compose-dev.yaml'
+
+syncs:
+  rails_docker_files:
+    notify_terminal: true
+    src: '../'
+    sync_excludes: ['.git', '.idea', 'node_modules', '.dev', '.dockerignore',]
+    sync_strategy: 'native_osx'
+    sync_userid: '1000'

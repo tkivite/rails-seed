@@ -1,0 +1,107 @@
+version: '3.7'
+
+x-app: &app
+  build:
+    context: ../
+    dockerfile: ./.dev/dev.Dockerfile
+  environment: &env
+    NODE_ENV: development
+    RAILS_ENV: ${RAILS_ENV:-development}
+    RUBYOPT: -W0 # suppress Ruby 2.7 deprecation errors
+  tmpfs:
+    - /tmp
+  networks:
+    - rails_docker
+
+x-backend: &backend
+  <<: *app
+  stdin_open: true
+  tty: true
+  volumes:
+    - ../:/home/deploy/app:cached
+    - ./configs/.bash_aliases:/home/deploy/.bash_aliases:ro
+    - ./configs/.psqlrc:/home/deploy/.psqlrc:ro
+    - bundle:/home/deploy/.bundle
+    # - node_modules:/home/deploy/app/node_modules
+    # - rails_cache:/home/deploy/app/tmp/cache
+    # - packs:/home/deploy/app/public/packs
+  environment:
+    <<: *env
+    REDIS_URL: redis://redis:6379/
+    BOOTSNAP_CACHE_DIR: /home/deploy/.bundle/_bootsnap
+    WEB_CONCURRENCY: 1
+    HISTFILE: /home/deploy/app/log/.bash_history
+    PSQL_HISTFILE: /home/deploy/app/log/.psql_history
+    DATABASE_URL: postgres://postgres:mysecretpassword@postgres
+    ENABLE_VCR: "true"
+  depends_on:
+    - postgres
+    - redis
+  restart: always #on-failure
+
+services:
+  # test:
+  #   <<: *backend
+  #   command: bundle exec guard
+
+  rails:
+    <<: *backend
+    command: tail -f /dev/null
+    # command: bundle exec rails server -b 0.0.0.0
+    ports:
+      - '3000:3000'
+
+  # sidekiq:
+  #   <<: *backend
+  #   command: bundle exec sidekiq -C config/sidekiq.yml
+
+  # webpacker:
+  #   <<: *app
+  #   command: ./bin/webpack-dev-server
+  #   ports:
+  #     - '3035:3035'
+  #   volumes:
+  #     - ../:/home/deploy/app:cached
+  #     - bundle:/home/deploy/.bundle
+  #     - node_modules:/home/deploy/app/node_modules
+  #     - packs:/home/deploy/app/javascript/packs
+  #   environment:
+  #     <<: *env
+  #     WEBPACKER_DEV_SERVER_HOST: 0.0.0.0
+
+  redis:
+    image: redis:5.0.7-alpine
+    volumes:
+      - redis:/data
+    ports:
+      - 6379
+    networks:
+      - rails_docker
+
+  postgres:
+    image: postgres:12.1
+    volumes:
+      - ./configs/.psqlrc:/root/.psqlrc:ro
+      - postgres:/var/lib/postgresql/data
+      # - ./volumes/pg_log:/root/log:cached
+    environment:
+      PSQL_HISTFILE: /root/log/.psql_history
+      POSTGRES_PASSWORD: mysecretpassword
+    ports:
+      - 5432
+    healthcheck:
+      test: pg_isready -U postgres -h 127.0.0.1
+      interval: 5s
+    networks:
+      - rails_docker
+
+volumes:
+  redis:
+  bundle:
+  postgres:
+  # node_modules:
+  # rails_cache:
+  # packs:
+
+networks:
+  rails_docker:
