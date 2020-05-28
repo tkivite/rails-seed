@@ -45,6 +45,9 @@
       DATABASE_URL: postgres://postgres:mysecretpassword@postgres
       POSTGRES_PASSWORD: mysecretpassword
       RAILS_ENV: test
+      RUBYOPT: -W0 # suppress Ruby 2.7 deprecation errors
+      HOST: localhost
+      PORT: 3000
     script:
       - bundle install
       - bundle exec rails db:create
@@ -59,6 +62,7 @@
       - master
       - release
     script:
+      - bundle install
       - bundle exec rubocop
     allow_failure: false
 
