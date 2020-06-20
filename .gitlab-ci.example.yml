@@ -94,6 +94,7 @@
       - gcloud config set compute/zone $ZONE
       - gcloud container clusters get-credentials $CLUSTER_NAME
       - kubectl set image deployment/rails-api rails-api=$CI_REGISTRY_IMAGE:$CI_VERSION --record -n rails
+      - kubectl set image deployment/sidekiq sidekiq=$CI_REGISTRY_IMAGE:$CI_VERSION --record -n rails
       - sed -i "s@\(image:\).*@\1 $CI_REGISTRY_IMAGE:$CI_VERSION@" .gke/rails-migration-job.yaml
       - kubectl apply -f .gke/rails-migration-job.yaml
       - |
