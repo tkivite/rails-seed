@@ -439,6 +439,20 @@ Using default [rubocop cops](https://rubocop.readthedocs.io/en/latest/) and [rai
 
 If you IDE rubocop linter is configured well, it will also use the The IDE will also use `.rubocop_todo.yml` files for your linting.
 
+**Setup Faster rubocop for docker**
+We setup [rubocop-daemon](https://github.com/fohte/rubocop-daemon) in order to ensure that our linting is fast. Onn Mac, rubocop is pretty slow, especially on Vscode. This is added to the `dev.Dockerfile`. This ensure running `rubocop` in the container will use the bin script and daemonize.
+
+**Setup Faster rubocop for Vscode**
+Install rubocop locally for vscode. This will work with the ruby language service extension.
+
+```
+# which rubocop is rbenv running?
+$ rbenv which rubocop
+<HOME>/.rbenv/versions/x.y.z/bin/rubocop
+
+# Override rubocop with a symlink to rubocop-daemon-wrapper
+ln -fs /usr/local/bin/rubocop-daemon-wrapper/rubocop $HOME/.rbenv/versions/x.y.z/bin/rubocop
+```
 ### 5. Configure root
 We'd like to have a default response to the api that's apart from rails default page. add the following to the routes
 

@@ -47,6 +47,15 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get -yq dist-upgrad
 # Run Rails Command as non root
 RUN groupadd  -g 1000 admin && \
     useradd -m -g admin -u 1000 deploy
+
+# Faster Rubocop
+RUN curl https://raw.githubusercontent.com/fohte/rubocop-daemon/master/bin/rubocop-daemon-wrapper -o /tmp/rubocop-daemon-wrapper
+RUN mkdir -p /usr/local/bin/rubocop-daemon-wrapper
+RUN mv /tmp/rubocop-daemon-wrapper /usr/local/bin/rubocop-daemon-wrapper/rubocop
+RUN chmod +x /usr/local/bin/rubocop-daemon-wrapper/rubocop
+
+ENV PATH /usr/local/bin/rubocop-daemon-wrapper:$PATH
+
 USER deploy
 
 # Configure bundler and rails
