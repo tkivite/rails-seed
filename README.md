@@ -440,7 +440,7 @@ Using default [rubocop cops](https://rubocop.readthedocs.io/en/latest/) and [rai
 If you IDE rubocop linter is configured well, it will also use the The IDE will also use `.rubocop_todo.yml` files for your linting.
 
 **Setup Faster rubocop for docker**
-We setup [rubocop-daemon](https://github.com/fohte/rubocop-daemon) in order to ensure that our linting is fast. Onn Mac, rubocop is pretty slow, especially on Vscode. This is added to the `dev.Dockerfile`. This ensure running `rubocop` in the container will use the bin script and daemonize.
+We setup [rubocop-daemon](https://github.com/fohte/rubocop-daemon) in order to ensure that our linting is fast. On Mac, rubocop is pretty slow, especially on Vscode. This is added to the `dev.Dockerfile`. This ensure running `rubocop` in the container will use the bin script and daemonize.
 
 **Setup Faster rubocop for Vscode**
 Install rubocop locally for vscode. This will work with the ruby language service extension.
@@ -452,6 +452,15 @@ $ rbenv which rubocop
 
 # Override rubocop with a symlink to rubocop-daemon-wrapper
 ln -fs /usr/local/bin/rubocop-daemon-wrapper/rubocop $HOME/.rbenv/versions/x.y.z/bin/rubocop
+ln -fs /usr/local/bin/rubocop-daemon-wrapper/rubocop /Users/kariuki/.rbenv/versions/3.0.0/bin/rubocop
+```
+
+**rubocop upgrade**
+When upgrading the rubocop gem and related(e.g. rubocop-rails), ensure you refresh chache by deleting the rubocop-daemon and rubocop_cache cache folder for the files to link to the proper, newer rubocop version.
+
+```sh
+rm -rf ~/.cache/rubocop-daemon
+rm -rf ~/.cache/rubocop_cache
 ```
 ### 5. Configure root
 We'd like to have a default response to the api that's apart from rails default page. add the following to the routes
