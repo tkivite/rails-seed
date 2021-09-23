@@ -1,9 +1,9 @@
 # https://evilmartians.com/chronicles/ruby-on-whales-docker-for-ruby-rails-development
-FROM ruby:2.7.0-slim-buster
+FROM ruby:3.0-slim-buster
 
-ENV PG_MAJOR=12
+ENV PG_MAJOR=13
 # ENV NODE_MAJOR=13
-ENV BUNDLER_VERSION=2.1.4
+# ENV BUNDLER_VERSION=2.1.4
 # ENV YARN_VERSION=1.21.1
 
 # Common dependencies
@@ -14,6 +14,7 @@ RUN apt-get update -qq \
     curl \
     less \
     git \
+    nano \
   && apt-get clean \
   && rm -rf /var/cache/apt/archives/* \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -44,10 +45,6 @@ RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get -yq dist-upgrad
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     truncate -s 0 /var/log/*log
 
-# Run Rails Command as non root
-RUN groupadd  -g 1000 admin && \
-    useradd -m -g admin -u 1000 deploy
-
 # Faster Rubocop
 RUN curl https://raw.githubusercontent.com/fohte/rubocop-daemon/master/bin/rubocop-daemon-wrapper -o /tmp/rubocop-daemon-wrapper
 RUN mkdir -p /usr/local/bin/rubocop-daemon-wrapper
@@ -55,7 +52,14 @@ RUN mv /tmp/rubocop-daemon-wrapper /usr/local/bin/rubocop-daemon-wrapper/rubocop
 RUN chmod +x /usr/local/bin/rubocop-daemon-wrapper/rubocop
 
 ENV PATH /usr/local/bin/rubocop-daemon-wrapper:$PATH
+ENV RUBOCOP_DAEMON_USE_BUNDLER true
 
+# upgrade rubygems and bundler
+RUN gem update --system --silent
+
+# Run Rails Command as non root
+RUN groupadd  -g 1000 admin && \
+    useradd -m -g admin -u 1000 deploy
 USER deploy
 
 # Configure bundler and rails
@@ -67,10 +71,8 @@ ENV LANG=C.UTF-8 \
   RAILS_ROOT=/home/deploy/app \
   RAILS_LOG_TO_STDOUT=1
 
-# Upgrade RubyGems and install required Bundler version
+# Configure RubyGems
 COPY --chown=deploy:admin .gemrc ~/.gemrc
-RUN gem update --system && \
-    gem install bundler:$BUNDLER_VERSION
 
 # Add aliases
 # COPY --chown=deploy:admin .dev/.bash_aliases /home/deploy/.bash_aliases
