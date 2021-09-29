@@ -19,16 +19,19 @@
       - vendor/
 
   build:
+    before_script:
+      - docker login -u _ -p $HEROKU_TOKEN registry.heroku.com
     stage: build
     only:
       - master
       - release
     script:
       - docker pull $CI_REGISTRY_IMAGE:latest || true
-      - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_VERSION --tag $CI_REGISTRY_IMAGE:latest .
+      - docker build --cache-from $CI_REGISTRY_IMAGE:latest --tag $CI_REGISTRY_IMAGE:$CI_VERSION --tag $CI_REGISTRY_IMAGE:latest . # --tag registry.heroku.com/dossier-api-staging/web
       - docker push $CI_REGISTRY_IMAGE:$CI_VERSION
       - docker push $CI_REGISTRY_IMAGE:latest
       # - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+      - docker push registry.heroku.com/dossier-api-staging/web # for heroku deployment
 
   minitest:
     before_script:
@@ -76,7 +79,29 @@
       - bundle exec bundle audit check --update
     allow_failure: false
 
-  deploy:
+  deploy-staging:
+    before_script:
+      - echo "running staging deployment" # override parent before_script
+      - apk add --no-cache curl
+      - docker login -u _ -p $HEROKU_TOKEN registry.heroku.com
+    stage: deploy
+    only:
+      - master
+    script:
+      - HEROKU_IMAGE_ID=$(docker inspect registry.heroku.com/your-heroku-app-name/web --format={{.Id}})
+      - |-
+        curl -X PATCH https://api.heroku.com/apps/your-heroku-app-name/formation
+             --header "Content-Type: application/json"
+             --header "Accept: application/vnd.heroku+json; version=3.docker-releases"
+             --header "Authorization: Bearer ${HEROKU_TOKEN}"
+             --data '{
+                        "updates": [ {
+                                        "type": "web",
+                                        "docker_image": "'$HEROKU_IMAGE_ID'"
+                                     }
+                                    ]
+                      }'
+  deploy-production:
     before_script:
       - echo "running deployment" # override parent before_script
     image:
