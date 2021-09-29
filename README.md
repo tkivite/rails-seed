@@ -456,7 +456,7 @@ ln -fs /usr/local/bin/rubocop-daemon-wrapper/rubocop /Users/kariuki/.rbenv/versi
 ```
 
 **rubocop upgrade**
-When upgrading the rubocop gem and related(e.g. rubocop-rails), ensure you refresh chache by deleting the rubocop-daemon and rubocop_cache cache folder for the files to link to the proper, newer rubocop version.
+When upgrading the rubocop gem and related(e.g. rubocop-rails), ensure you refresh cache by deleting the rubocop-daemon and rubocop_cache cache folder for the files to link to the proper, newer rubocop version.
 
 ```sh
 gem update rubocop rubocop-rails
