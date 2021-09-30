@@ -74,3 +74,6 @@ RUN bundle install
 
 # Copy the main application.
 COPY --chown=deploy:admin . ${RAILS_ROOT}/
+
+# for deployment environments(for example Heroku) that do not allow running a start command in a container - optional
+CMD ["rails", "s"]

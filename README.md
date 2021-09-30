@@ -554,13 +554,13 @@ CLUSTER_NAME: "cluster-name"
 
 Then, create a new app,
 
-```bash 
+```bash
 heroku create
 ```
 
 Then, login to the heroku container registry,
 
-```bash 
+```bash
 heroku container:login
 ```
 
@@ -578,7 +578,7 @@ Push the image to the registry,
 docker push registry.heroku.com/your-heroku-app-name/web
 ```
 
-Create the rails ENV variables for your rails app. However, leave out `DATABASE_URL` and `REDIS_URL` since they'll be automatically created during provisioning of Heroku-Postgresql and Heroku-Redis on Heroku. 
+Create the rails ENV variables for your rails app. However, leave out `DATABASE_URL` and `REDIS_URL` since they'll be automatically created during provisioning of Heroku-Postgresql and Heroku-Redis on Heroku.
 
 Read on [Heroku-Postgresql](https://devcenter.heroku.com/articles/heroku-postgresql) and [Heroku-Redis](https://devcenter.heroku.com/articles/heroku-redis) provisioning.
 
@@ -592,6 +592,8 @@ Heroku will deploy the image afterwhich you can visit your app by following http
 
 ### Continuos deployment with GitLab CI
 Retrieve a heroku auth token and save it as a variable using name `HEROKU_TOKEN` in gitlab CI under Settings > CI / CD > Variables.
+
+Make sure your HEROKU_{VARIABLES} match your variables.
 
 Then, your staging deployment job should be similar to the `deploy-staging` job in `.gitlab-ci.example.yml`
 
