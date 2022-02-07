@@ -593,8 +593,6 @@ Heroku will deploy the image afterwhich you can visit your app by following http
 ### Continuos deployment with GitLab CI
 Retrieve a heroku auth token and save it as a variable using name `HEROKU_TOKEN` in gitlab CI under Settings > CI / CD > Variables.
 
-Make sure your HEROKU_{VARIABLES} match your variables.
-
 Then, your staging deployment job should be similar to the `deploy-staging` job in `.gitlab-ci.example.yml`
 
 Make a quick change to your app, push changes to gitlab and watch Gitlab building and deploying your new updates automatically.

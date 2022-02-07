@@ -1,7 +1,7 @@
 #!/bin/sh
 
-docker pull $HEROKU_REGISTRY_IMAGE
-HEROKU_IMAGE_ID=$(docker inspect ${HEROKU_REGISTRY_IMAGE} --format={{.Id}})
+docker pull $HEROKU_WEB_IMAGE
+HEROKU_IMAGE_ID=$(docker inspect ${HEROKU_WEB_IMAGE} --format={{.Id}})
 
 curl --location --request PATCH "https://api.heroku.com/apps/${HEROKU_APP_NAME}/formation" \
 --header "Authorization: Bearer ${HEROKU_TOKEN}" \
