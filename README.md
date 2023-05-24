@@ -69,7 +69,7 @@ First build the images, then set the desired rails version in the `Gemfile` then
 ```sh
 docker-compose build
 #  Set rails version in Gemfile
-docker compose run <rails-service> --rm bundle install
+docker compose run --rm  <rails-service> bundle install
 ```
 Your Gemfile.lock file will be re-created.
 
