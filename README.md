@@ -20,7 +20,7 @@ This repo is is a reference to get set up developing rails application with dock
 Shallow clone the repo into a folder(`rails-app-name`) you want your rails app to live and initialize you git repo
 
 ```bash
-git clone git@gitlab.com:nifty-nice/rails-docker.git rails-app-name --depth 1 -b master
+git clone git@gitlab.com:zege/tools/rails-seed.git rails-app-name --depth 1 -b master
 
 cd rails-app-name
 rm -rf .git
